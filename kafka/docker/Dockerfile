@@ -1,5 +1,5 @@
 FROM bigdata/base:1.0
-MAINTAINER zhouzhiwei <zhouzhiwei@bonc.com.cn>
+MAINTAINER zhouzhiwei <zhiweiper@163.com>
 
 ENV KAFKA_HOME=/opt/bigdata/core/kafka \
     KAFKA_VERSION=2.11-2.2.2 \

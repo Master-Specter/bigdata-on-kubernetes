@@ -1,5 +1,5 @@
 FROM bigdata/base:1.0 
-MAINTAINER zhouzhiwei <zhouzhiwei@bonc.com.cn>
+MAINTAINER zhouzhiwei <zhiweiper@163.com>
 
 ENV ZK_HOME=/opt/bigdata/core/zookeeper \
     ZK_USER=hadoop \

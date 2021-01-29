@@ -1,5 +1,5 @@
 FROM centos:7.4.1708
-MAINTAINER zhouzhiwei <zhouzhiwei@bonc.com.cn>
+MAINTAINER zhouzhiwei <zhiweiper@163.com>
 
 ENV BIGDATA_DIR=/opt/bigdata \
     JAVA_HOME=/opt/bigdata/core/jdk \
