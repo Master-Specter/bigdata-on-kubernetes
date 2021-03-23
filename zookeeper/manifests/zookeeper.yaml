@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper-service
+  namespace: testzzw
+  labels:
+    app: zookeeper-service
+spec:
+  ports:
+    - name: client
+      port: 2181
+    - name: server
+      port: 2888
+    - name: leader-election
+      port: 3888
+  clusterIP: None
+  selector:
+    app: zookeeper
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: zookeeper-pdb
+  namespace: testzzw
+spec:
+  selector:
+    matchLabels:
+      app: zookeeper
+  maxUnavailable: 1
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+  namespace: testzzw
+spec:
+  serviceName: zookeeper-service
+  replicas: 3
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      initContainers:
+        - name: init-zookeeper
+          image: "k8s-1:5000/bgzookeeper:3.4.13"
+          imagePullPolicy: Always
+          command:
+            - sh
+            - -c
+            - |
+              set -ex
+              zkConfig.sh
+              [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+              ordinal=${BASH_REMATCH[1]}
+              if [ ! -d $ZK_DATA_DIR/$ordinal  ]; then
+                  mkdir -p $ZK_DATA_DIR/$ordinal
+              fi
+              sed -i s" dataDir=/var/lib/zookeeper/data dataDir=/var/lib/zookeeper/data/$ordinal "g /opt/bigdata/core/zookeeper/conf/zoo.cfg
+              mv /var/lib/zookeeper/data/myid /var/lib/zookeeper/data/$ordinal/
+              cp /opt/bigdata/core/zookeeper/conf/* /conf
+          env:
+            - name: ZK_REPLICAS
+              value: "3"
+            - name : ZK_HEAP_SIZE
+              value: "1G"
+            - name : ZK_TICK_TIME
+              value: "2000"
+            - name : ZK_INIT_LIMIT
+              value: "10"
+            - name : ZK_SYNC_LIMIT
+              value: "2000"
+            - name : ZK_MAX_CLIENT_CNXNS
+              value: "60"
+            - name: ZK_SNAP_RETAIN_COUNT
+              value: "3"
+            - name: ZK_PURGE_INTERVAL
+              value: "0"
+            - name: ZK_CLIENT_PORT
+              value: "2181"
+            - name: ZK_SERVER_PORT
+              value: "2888"
+            - name: ZK_ELECTION_PORT
+              value: "3888"
+          volumeMounts:
+            - name: conf
+              mountPath: /conf
+            - name: zookeeper-data
+              mountPath: /var/lib/zookeeper/data
+      containers:
+        - name: zookeeper
+          imagePullPolicy: Always
+          image: "k8s-1:5000/bgzookeeper:3.4.13"
+          resources:
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+            requests:
+              memory: "1Gi"
+              cpu: "1"
+          ports:
+            - name: client
+              containerPort: 2181
+            - name: server
+              containerPort: 2888
+            - name: leader-election
+              containerPort: 3888
+          command:
+            - bash
+            - -c
+            - |
+              set -ex
+              \cp -f /conf/zoo.cfg /opt/bigdata/core/zookeeper/conf
+              exec zkServer.sh start-foreground
+          volumeMounts:
+            - name: zookeeper-data
+              mountPath: /var/lib/zookeeper/data
+            - name: conf
+              mountPath: /conf
+      volumes:
+        - name: zookeeper-data
+          persistentVolumeClaim:
+            claimName: zookeeper-pvc #对应的zk资源的卷名称
+        - name: conf
+          emptyDir: {}
