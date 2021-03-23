@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-service
+  namespace: testzzw
+  labels:
+    app: kafka
+spec:
+  type: NodePort
+  ports:
+    - port: 9092
+      name: web
+  selector:
+    app: kafka
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: kafka-pdb
+  namespace: testzzw
+spec:
+  selector:
+    matchLabels:
+      app: kafka
+  maxUnavailable: 1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: testzzw
+spec:
+  serviceName: kafka-service
+  replicas: 3
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          imagePullPolicy: Always
+          image: "k8s-1:5000/kafka:2.11-1.0.0"
+          resources:
+            limits:
+              memory: "1Gi"
+              cpu: "1"
+            requests:
+              memory: "1Gi"
+              cpu: "1"
+          ports:
+            - containerPort: 9092
+              name: server
+          command:
+            - sh
+            - -c
+            - "start-kafka.sh"
+          env:
+            - name: KAFKA_HEAP_OPTS
+              value : "-Xmx512M -Xms512M"
+            - name: KAFKA_OPTS
+              value: "-Dlogging.level=INFO"
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /opt/data
+            - name: kafka-config
+              mountPath: /opt/bigdata/conf/kafkaconf
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 20
+            periodSeconds: 10
+      volumes:
+        - name: kafka-data
+          persistentVolumeClaim:
+            claimName: kafka-pvc # 对应的kafka资源的卷名称
+        - name: kafka-config
+          configMap:
+            name: kafka-config   # kafka configmap卷名
