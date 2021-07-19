@@ -46,7 +46,7 @@ spec:
     spec:
       initContainers:
         - name: init-zookeeper
-          image: "k8s-1:5000/bgzookeeper:3.4.13"
+          image: "k8s-1:5000/zookeeper:3.4.13"
           imagePullPolicy: Always
           command:
             - sh
@@ -93,7 +93,7 @@ spec:
       containers:
         - name: zookeeper
           imagePullPolicy: Always
-          image: "k8s-1:5000/bgzookeeper:3.4.13"
+          image: "k8s-1:5000/zookeeper:3.4.13"
           resources:
             limits:
               memory: "1Gi"
@@ -115,6 +115,22 @@ spec:
               set -ex
               \cp -f /conf/zoo.cfg /opt/bigdata/core/zookeeper/conf
               exec zkServer.sh start-foreground
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "zookeeper-ready 2181"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            livenessProbe:
+              exec:
+                command:
+                  - sh
+                  - -c
+                  - "zookeeper-ready 2181"
+              initialDelaySeconds: 10
+              timeoutSeconds: 5
           volumeMounts:
             - name: zookeeper-data
               mountPath: /var/lib/zookeeper/data
