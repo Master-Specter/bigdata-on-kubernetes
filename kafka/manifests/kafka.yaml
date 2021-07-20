@@ -68,7 +68,7 @@ spec:
               value: "-Dlogging.level=INFO"
           volumeMounts:
             - name: kafka-data
-              mountPath: /opt/data
+              mountPath: /opt/bigdata/data
             - name: kafka-config
               mountPath: /opt/bigdata/conf/kafkaconf
           readinessProbe:
