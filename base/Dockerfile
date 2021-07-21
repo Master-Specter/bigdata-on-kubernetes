@@ -27,7 +27,7 @@ RUN set -x \
     && mkdir -p $BIGDATA_DIR/conf \
     && mkdir -p $BIGDATA_DIR/logs \
     && mkdir -p $BIGDATA_DIR/metadata \
-    && mkdir -p $BIGDATA_DIR/tmp \
+    && mkdir -p $BIGDATA_DIR/tmp
 
 #install java
 ADD packages/jdk.tar.gz $BIGDATA_DIR/core
